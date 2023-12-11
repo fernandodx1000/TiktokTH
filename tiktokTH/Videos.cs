@@ -33,7 +33,7 @@ namespace tiktokTH
 
         }
         // Asynchronous method to initialize additional properties
-        private async void InitializeAsync(string videoUrl)
+        public async void InitializeAsync(string videoUrl)
         {
             DownloadUrl = await GetDownloadUrl(videoUrl);
         }
@@ -71,7 +71,7 @@ namespace tiktokTH
             {
                 // URL and data
                 string url = "https://ttdownloader.com/search/";
-                string postData = $"url={tikTokUrl}&format=&token=419cbc2e380a5b2cb33c62922c9803ded89797b101aa1f6ebb01de87e3950170";
+                string postData = $"url={tikTokUrl}&format=&token=563ad1b2ea9daa0767e4eedf6c254a7cfb3507aab08c30bbdfdc0e21933f55f2";
 
                 // Creating the HttpRequestMessage
                 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -89,7 +89,7 @@ namespace tiktokTH
                 request.Headers.Add("sec-fetch-mode", "cors");
                 request.Headers.Add("sec-fetch-site", "same-origin");
                 request.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
-                request.Headers.Add("x-requested-with", "XMLHttpRequest");
+                 request.Headers.Add("x-requested-with", "XMLHttpRequest");
                 request.Content = new StringContent(postData, Encoding.UTF8, "application/x-www-form-urlencoded");
 
                 // Sending the request
@@ -97,7 +97,7 @@ namespace tiktokTH
 
                 // Reading the response
                 responseBody = await response.Content.ReadAsStringAsync();
-               // Console.WriteLine(responseBody);
+              //  Console.WriteLine(responseBody);
             }
 
             return ExtractDownloadUrl(responseBody);
