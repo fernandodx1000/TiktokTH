@@ -1,10 +1,5 @@
 ﻿using HtmlAgilityPack;
 using OpenQA.Selenium;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace tiktokTH
@@ -18,7 +13,7 @@ namespace tiktokTH
             _driver = driver;
         }
 
-        public List<Videos> GetVideos()
+        public async Task<List<Videos>> GetVideosAsync(IProgress<int> overallProgress = null)
         {
             List<Videos> videosList = new List<Videos>();
 
@@ -34,9 +29,17 @@ namespace tiktokTH
 
             if (hrefAttributes != null)
             {
+                int totalCount = hrefAttributes.Count;
+                int processedCount = 0;
+
                 foreach (var hrefValue in hrefAttributes)
                 {
-                    videosList.Add(new Videos(hrefValue.GetAttributeValue("href", "")));
+                    videosList.Add(await Videos.CreateAsync(hrefValue.GetAttributeValue("href", "")));
+
+                    // Report progress for each video creation
+                    processedCount++;
+                    int percentage = (int)((double)processedCount / totalCount * 100);
+                    overallProgress?.Report(percentage);
                 }
             }
             else
@@ -48,5 +51,4 @@ namespace tiktokTH
         }
 
     }
-
 }

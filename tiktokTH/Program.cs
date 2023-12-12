@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -8,15 +9,19 @@ using System.Threading.Tasks;
 using HtmlAgilityPack;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using ShellProgressBar;
 using tiktokTH;
 
 internal class Program
-    {
+{
+    private static int completedTasks = 0;
+    private static readonly object lockObject = new object();
+
     private static async Task Main()
     {
         // Set up Chrome options to run in headless mode
         var chromeOptions = new ChromeOptions();
-        chromeOptions.AddArgument("--headless");
+        //chromeOptions.AddArgument("--headless");
 
         IWebDriver driver = new ChromeDriver(chromeOptions);
 
@@ -28,50 +33,49 @@ internal class Program
 
         // Create an instance of TikTokScraper and use it to retrieve videos
         TikTokScraper tikTokScraper = new TikTokScraper(driver);
-        List<Videos> videosList = tikTokScraper.GetVideos();
+        // List<Videos> videosList =  tikTokScraper.GetVideos();
+        //List<Videos> videosList = await tikTokScraper.GetVideosAsync();
+        List<Videos> videosList;
 
-
-        // Asynchronously initialize the DownloadUrl for each video
-        var initializeTasks = videosList.Select((Videos video) => Task.FromResult(video.DownloadUrl));
-
-        // Track the total number of tasks
-        int totalTasks = initializeTasks.Count();
-
-        // Counter for completed tasks
-        int completedTasks = 0;
-
-        // Wait for all initialization tasks to complete
-        await Task.WhenAll(initializeTasks.Select(async task =>
+        // Create a progress bar for overall progress
+        var overallProgressOptions = new ProgressBarOptions
         {
-            // Increment the completed tasks counter
-            Interlocked.Increment(ref completedTasks);
+            ProgressCharacter = '#',
+            ProgressBarOnBottom = true
+        };
 
-            // Simulate some asynchronous work
-            //await task;
-
-            // Update the text-based progress bar for each task
-            Console.WriteLine($"Initialization Progress for video {completedTasks}/{totalTasks}: [{new string('#', completedTasks)}{new string('-', totalTasks - completedTasks)}]");
-        }));
-
-
-        // Use the videosList as needed
-        /*
-        foreach (var video in videosList)
+        using (var overallProgressBar = new ProgressBar(100, "Overall progress...", overallProgressOptions))
         {
-            Console.WriteLine($"Username: {video.Username} \n" +
-                $"Video URL: {video.VideoUrl}\n" +
-                $"Video Title: {video.VideoTitle} \n" +
-                $"Video Download Link: {video.DownloadUrl} \n");
+            // Subscribe to the overall progress event
+            var overallProgress = new Progress<int>(percentage =>
+            {
+                // Update the overall progress bar
+                overallProgressBar.Tick(percentage, $"Overall progress... {percentage}% complete");
+            });
+
+            // Retrieve videos with overall progress reporting
+            videosList = await tikTokScraper.GetVideosAsync(overallProgress);
         }
-        */
-        // Pause execution to observe the stored Videos instances
-        Console.WriteLine("Press Enter to exit.");
-        Console.ReadLine();
 
-        // Close the browser
-        driver.Quit();
-    }
 
+
+        foreach (var video in videosList)
+            {
+                Console.WriteLine($"Username: {video.Username} \n" +
+                    $"Video URL: {video.VideoUrl}\n" +
+                    $"Video Title: {video.VideoTitle} \n" +
+                    $"Video Download Link: {video.DownloadUrl} \n");
+            }
+
+
+            // Pause execution to observe the stored Videos instances
+            Console.WriteLine("Press Enter to exit.");
+            Console.ReadLine();
+
+            // Close the browser
+            driver.Quit();
+     }
+    
 }
 
 
