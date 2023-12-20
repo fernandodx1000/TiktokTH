@@ -4,6 +4,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using OpenQA.Selenium.DevTools.V118.Network;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace tiktokTH
 {
@@ -12,29 +14,48 @@ namespace tiktokTH
         public string Username { get; set; }
         public string VideoUrl { get; set; }
         public string VideoTitle { get; set; }
+        public DateTime VideoDate { get; set; }
+        public string VideoId { get; set; }
         public string VideoHastags { get; set; }
         public string DownloadUrl { get; set; }
 
+        private VideoDateParser dateParser = new VideoDateParser();
+
+
         public Videos(string videoUrl)
         {
+
             VideoUrl = videoUrl;
             Username = ExtractUsernameFromUrl(videoUrl);
+
         }
 
-        public static async Task<Videos> CreateAsync(string videoUrl)
+        public static async Task<Videos> CreateAsync(string videoUrl, string Date)
         {
             var videos = new Videos(videoUrl);
-            await videos.InitializeAsync();
+            await videos.InitializeAsync(videoUrl, Date);
             return videos;
         }
 
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(string videoUrl, string Date)
         {
-            VideoTitle = await GetVideoTitleAsync();
-            DownloadUrl = await GetDownloadUrlAsync();
-            Console.WriteLine(DownloadUrl);
-        }
+            VideoTitle = "deu merda";// await GetVideoTitleAsync();
+            VideoId = await GetVideoIdAsync(videoUrl);
+            VideoDate = dateParser.TranslateVideoDate(Date);
+            DownloadUrl = await GetDownloadUrlAsync(videoUrl);
 
+        }
+        private static async Task<string> GetVideoIdAsync(string videoUrl)
+        {
+            // Use regex to extract the video ID from the TikTok URL
+            Match match = Regex.Match(videoUrl, @"/video/(\d+)");
+            if (match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+
+            return null;
+        }
         private string ExtractUsernameFromUrl(string videoUrl)
         {
             var match = Regex.Match(videoUrl, @"\/@([^\/]+)\/video\/");
@@ -62,13 +83,60 @@ namespace tiktokTH
             }
         }
 
-        private async Task<string> GetDownloadUrlAsync()
+        private async Task<string> GetDownloadUrlAsync(string videoUrl)
         {
+
+            string tokenValue = "";
+
+            using (HttpClient client = new HttpClient())
+            {
+                // Set headers
+                client.DefaultRequestHeaders.Add("Host", "ttdownloader.com");
+                client.DefaultRequestHeaders.Add("Cookie", "PHPSESSID=hc170bnsorlhk88n4qst7000s5; _gid=GA1.2.2075230462.1703078434; cf_clearance=jZlrUZOaVRAt3qEka5GI8qLQf4ng6Im0CGhRu0tXxkM-1703078430-0-2-c1bb6225.d2b6af7c.96ba3dc5-0.2.1703078430; _ga_CXXL1WRV92=GS1.1.1703078433.15.1.1703078629.0.0.0; _ga=GA1.1.1549109859.1702222463");
+                client.DefaultRequestHeaders.Add("cache-control", "max-age=0");
+                client.DefaultRequestHeaders.Add("sec-ch-ua", "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"");
+                client.DefaultRequestHeaders.Add("sec-ch-ua-mobile", "?0");
+                client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
+                client.DefaultRequestHeaders.Add("dnt", "1");
+                client.DefaultRequestHeaders.Add("upgrade-insecure-requests", "1");
+                client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                client.DefaultRequestHeaders.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+                client.DefaultRequestHeaders.Add("sec-fetch-site", "same-origin");
+                client.DefaultRequestHeaders.Add("sec-fetch-mode", "navigate");
+                client.DefaultRequestHeaders.Add("sec-fetch-user", "?1");
+                client.DefaultRequestHeaders.Add("sec-fetch-dest", "document");
+                client.DefaultRequestHeaders.Add("accept-language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
+
+                string url = "https://ttdownloader.com/pt/";
+
+
+                // Make the GET request
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                // Check if the request was successful
+                if (response.IsSuccessStatusCode)
+                {
+                    // Read and parse the HTML content
+                    string content = await response.Content.ReadAsStringAsync();
+
+                    // Extract the value of //*[@id="token"]
+                    tokenValue = ExtractTokenValue(content);
+
+                    // Output the token value
+                    Console.WriteLine($"Token Value: {tokenValue}");
+                }
+                else
+                {
+                    Console.WriteLine($"Request failed with status code: {response.StatusCode}");
+                }
+            }
+
+
             using (var client = new HttpClient())
             {
                 string responseBody;
                 var url = "https://ttdownloader.com/search/";
-                var postData = $"url={VideoUrl}&format=&token=2004495bf50688664cda56e71eaa431502bfd26c0e70412ebf26e732952a99bf";
+                var postData = $"url={VideoUrl}&format=&token={tokenValue}";
 
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Add("authority", "ttdownloader.com");
@@ -93,6 +161,27 @@ namespace tiktokTH
                 responseBody = await response.Content.ReadAsStringAsync();
 
                 return ExtractDownloadUrl(responseBody);
+            }
+        }
+
+        private static string ExtractTokenValue(string htmlContent)
+        {
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(htmlContent);
+
+            // Use XPath to select the desired element
+            HtmlNode tokenNode = doc.DocumentNode.SelectSingleNode("//*[@id='token']");
+
+            // Check if the node is found
+            if (tokenNode != null)
+            {
+                // Get the value of the 'value' attribute
+                string tokenValue = tokenNode.GetAttributeValue("value", "");
+                return tokenValue;
+            }
+            else
+            {
+                return null; // or handle the case where the node is not found
             }
         }
 
