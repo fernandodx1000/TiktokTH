@@ -41,8 +41,8 @@ namespace tiktokTH
         {
             VideoTitle = "deu merda";// await GetVideoTitleAsync();
             VideoId = await GetVideoIdAsync(videoUrl);
-            VideoDate = dateParser.TranslateVideoDate(Date);
-            DownloadUrl = await GetDownloadUrlAsync(videoUrl);
+            VideoDate = dateParser.TranslateVideoDate(Date); // videos ha horas nao mostra
+            DownloadUrl = await GetDownloadUrlAsync();
 
         }
         private static async Task<string> GetVideoIdAsync(string videoUrl)
@@ -83,85 +83,105 @@ namespace tiktokTH
             }
         }
 
-        private async Task<string> GetDownloadUrlAsync(string videoUrl)
+        private async Task<string> GetDownloadUrlAsync()
         {
-
             string tokenValue = "";
+            string responseBody = "";
 
-            using (HttpClient client = new HttpClient())
+            try
             {
-                // Set headers
-                client.DefaultRequestHeaders.Add("Host", "ttdownloader.com");
-                client.DefaultRequestHeaders.Add("Cookie", "PHPSESSID=hc170bnsorlhk88n4qst7000s5; _gid=GA1.2.2075230462.1703078434; cf_clearance=jZlrUZOaVRAt3qEka5GI8qLQf4ng6Im0CGhRu0tXxkM-1703078430-0-2-c1bb6225.d2b6af7c.96ba3dc5-0.2.1703078430; _ga_CXXL1WRV92=GS1.1.1703078433.15.1.1703078629.0.0.0; _ga=GA1.1.1549109859.1702222463");
-                client.DefaultRequestHeaders.Add("cache-control", "max-age=0");
-                client.DefaultRequestHeaders.Add("sec-ch-ua", "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"");
-                client.DefaultRequestHeaders.Add("sec-ch-ua-mobile", "?0");
-                client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
-                client.DefaultRequestHeaders.Add("dnt", "1");
-                client.DefaultRequestHeaders.Add("upgrade-insecure-requests", "1");
-                client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-                client.DefaultRequestHeaders.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                client.DefaultRequestHeaders.Add("sec-fetch-site", "same-origin");
-                client.DefaultRequestHeaders.Add("sec-fetch-mode", "navigate");
-                client.DefaultRequestHeaders.Add("sec-fetch-user", "?1");
-                client.DefaultRequestHeaders.Add("sec-fetch-dest", "document");
-                client.DefaultRequestHeaders.Add("accept-language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
-
-                string url = "https://ttdownloader.com/pt/";
-
-
-                // Make the GET request
-                HttpResponseMessage response = await client.GetAsync(url);
-
-                // Check if the request was successful
-                if (response.IsSuccessStatusCode)
+                using (HttpClient client = new HttpClient())
                 {
-                    // Read and parse the HTML content
-                    string content = await response.Content.ReadAsStringAsync();
+                    // Set headers
+                    client.DefaultRequestHeaders.Add("Host", "ttdownloader.com");
+                    client.DefaultRequestHeaders.Add("Cookie", "PHPSESSID=hc170bnsorlhk88n4qst7000s5; _gid=GA1.2.2075230462.1703078434; cf_clearance=jZlrUZOaVRAt3qEka5GI8qLQf4ng6Im0CGhRu0tXxkM-1703078430-0-2-c1bb6225.d2b6af7c.96ba3dc5-0.2.1703078430; _ga_CXXL1WRV92=GS1.1.1703078433.15.1.1703078629.0.0.0; _ga=GA1.1.1549109859.1702222463");
+                    client.DefaultRequestHeaders.Add("cache-control", "max-age=0");
+                    client.DefaultRequestHeaders.Add("sec-ch-ua", "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"");
+                    client.DefaultRequestHeaders.Add("sec-ch-ua-mobile", "?0");
+                    client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
+                    client.DefaultRequestHeaders.Add("dnt", "1");
+                    client.DefaultRequestHeaders.Add("upgrade-insecure-requests", "1");
+                    client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                    client.DefaultRequestHeaders.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+                    client.DefaultRequestHeaders.Add("sec-fetch-site", "same-origin");
+                    client.DefaultRequestHeaders.Add("sec-fetch-mode", "navigate");
+                    client.DefaultRequestHeaders.Add("sec-fetch-user", "?1");
+                    client.DefaultRequestHeaders.Add("sec-fetch-dest", "document");
+                    client.DefaultRequestHeaders.Add("accept-language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
 
-                    // Extract the value of //*[@id="token"]
-                    tokenValue = ExtractTokenValue(content);
+                    string url = "https://ttdownloader.com/pt/";
 
-                    // Output the token value
-                    Console.WriteLine($"Token Value: {tokenValue}");
+                    Console.WriteLine($"just debug");
+
+
+                    // Make the GET request
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    Console.WriteLine(response);
+
+                    // Check if the request was successful
+                    if (response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"just debug 2");
+
+                        // Read and parse the HTML content
+                        string content = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"just debug 3");
+
+                        // Extract the value of //*[@id="token"]
+                        tokenValue = ExtractTokenValue(content);
+
+                        // Output the token value
+                        Console.WriteLine($"Token Value: {tokenValue}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Request failed with status code: {response.StatusCode}");
+                    }
                 }
-                else
+
+
+                using (var client = new HttpClient())
                 {
-                    Console.WriteLine($"Request failed with status code: {response.StatusCode}");
+                    var url = "https://ttdownloader.com/search/";
+                    var postData = $"url={VideoUrl}&format=&token={tokenValue}";
+
+                    var request = new HttpRequestMessage(HttpMethod.Post, url);
+                    request.Headers.Add("authority", "ttdownloader.com");
+                    request.Headers.Add("accept", "*/*");
+                    request.Headers.Add("accept-language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
+                    request.Headers.Add("cookie", "PHPSESSID=foggri00tgcb6vd397etrsu9s2; _gid=GA1.2.742261162.1702222463; cf_clearance=8rvKsKnf8I3C0KYrMunJNTiJHrxOFtAboID1YdMZcGs-1702295213-0-1-ea9d65e2.55e0d13a.4987558a-0.2.1702295213; _ga_CXXL1WRV92=GS1.1.1702295216.3.1.1702296979.0.0.0; _ga=GA1.2.1549109859.1702222463; _gat_gtag_UA_117413493_7=1");
+                    request.Headers.Add("dnt", "1");
+                    request.Headers.Add("origin", "https://ttdownloader.com");
+                    request.Headers.Add("referer", "https://ttdownloader.com/pt/");
+                    request.Headers.Add("sec-ch-ua", "\"Google Chrome\";v=\"119\", \"Chromium\";v=\"119\", \"Not?A_Brand\";v=\"24\"");
+                    request.Headers.Add("sec-ch-ua-mobile", "?0");
+                    request.Headers.Add("sec-ch-ua-platform", "\"Windows\"");
+                    request.Headers.Add("sec-fetch-dest", "empty");
+                    request.Headers.Add("sec-fetch-mode", "cors");
+                    request.Headers.Add("sec-fetch-site", "same-origin");
+                    request.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
+                    request.Headers.Add("x-requested-with", "XMLHttpRequest");
+
+                    request.Content = new StringContent(postData, Encoding.UTF8, "application/x-www-form-urlencoded");
+
+                    var response = await client.SendAsync(request);
+                    responseBody = await response.Content.ReadAsStringAsync();
+
+
                 }
             }
-
-
-            using (var client = new HttpClient())
+            catch(Exception e)
             {
-                string responseBody;
-                var url = "https://ttdownloader.com/search/";
-                var postData = $"url={VideoUrl}&format=&token={tokenValue}";
-
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Add("authority", "ttdownloader.com");
-                request.Headers.Add("accept", "*/*");
-                request.Headers.Add("accept-language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
-                request.Headers.Add("cookie", "PHPSESSID=foggri00tgcb6vd397etrsu9s2; _gid=GA1.2.742261162.1702222463; cf_clearance=8rvKsKnf8I3C0KYrMunJNTiJHrxOFtAboID1YdMZcGs-1702295213-0-1-ea9d65e2.55e0d13a.4987558a-0.2.1702295213; _ga_CXXL1WRV92=GS1.1.1702295216.3.1.1702296979.0.0.0; _ga=GA1.2.1549109859.1702222463; _gat_gtag_UA_117413493_7=1");
-                request.Headers.Add("dnt", "1");
-                request.Headers.Add("origin", "https://ttdownloader.com");
-                request.Headers.Add("referer", "https://ttdownloader.com/pt/");
-                request.Headers.Add("sec-ch-ua", "\"Google Chrome\";v=\"119\", \"Chromium\";v=\"119\", \"Not?A_Brand\";v=\"24\"");
-                request.Headers.Add("sec-ch-ua-mobile", "?0");
-                request.Headers.Add("sec-ch-ua-platform", "\"Windows\"");
-                request.Headers.Add("sec-fetch-dest", "empty");
-                request.Headers.Add("sec-fetch-mode", "cors");
-                request.Headers.Add("sec-fetch-site", "same-origin");
-                request.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
-                request.Headers.Add("x-requested-with", "XMLHttpRequest");
-
-                request.Content = new StringContent(postData, Encoding.UTF8, "application/x-www-form-urlencoded");
-
-                var response = await client.SendAsync(request);
-                responseBody = await response.Content.ReadAsStringAsync();
-
-                return ExtractDownloadUrl(responseBody);
+                Console.WriteLine($"{e}");
             }
+
+         
+            
+
+            
+
+            return ExtractDownloadUrl(responseBody);
         }
 
         private static string ExtractTokenValue(string htmlContent)

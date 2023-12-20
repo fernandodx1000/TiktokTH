@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -94,56 +95,7 @@ internal class Program
         driver.Navigate().GoToUrl("https://www.tiktok.com/login");
 
         try
-        {/*
-            // Wait for the element to be present
-            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-            IWebElement element = wait.Until(ExpectedConditions.ElementExists(By.XPath("/html/body/div[1]/div/div[2]/div/div/div/div[6]")));
-
-            // Click on the element
-            element.Click();
-
-            // Wait for the new window or tab to open
-            wait.Until(driver => driver.WindowHandles.Count > 1);
-
-            // Switch to the new window or tab
-            string originalWindowHandle = driver.CurrentWindowHandle;
-            foreach (string windowHandle in driver.WindowHandles)
-            {
-                if (windowHandle != originalWindowHandle)
-                {
-                    driver.SwitchTo().Window(windowHandle);
-                    break;
-                }
-            }
-
-            // Wait for the email input field to be present
-            WebDriverWait wait2 = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-            IWebElement emailInput = wait2.Until(ExpectedConditions.ElementExists(By.XPath("/html/body/div[2]/div/form/fieldset[1]/div[1]/input")));
-
-            // Input the email address
-            emailInput.SendKeys("costagoncalo9@gmail.com");
-
-            // Wait for the password input field to be present
-            IWebElement passwordInput = wait.Until(ExpectedConditions.ElementExists(By.XPath("/html/body/div[2]/div/form/fieldset[1]/div[2]/input")));
-
-            // Input the password
-            passwordInput.SendKeys("patoseguro98");
-
-            // Wait for the login button to be present
-            IWebElement loginButton = wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("/html/body/div[2]/div/form/fieldset[2]/input[1]")));
-
-            // Click on the login button
-            loginButton.Click();
-
-            // Perform actions on the new page
-
-            // ...
-
-            // Switch back to the original window
-            driver.SwitchTo().Window(originalWindowHandle);
-
-            // Now you are back in the original window
-           */
+        {
             
             driver.Navigate().GoToUrl("https://www.tiktok.com/search/video?lang=pt-BR&q=cr7");
 
@@ -151,59 +103,87 @@ internal class Program
 
             Thread.Sleep(5000);
 
-            // Set a flag to track whether the element is found
+            // Initialize variables
+            int initialCount = 0;
+            int currentCount;
+            Stopwatch stopwatch = new Stopwatch();
             bool isElementFound = false;
 
-            // Set up a loop with a maximum number of attempts (to prevent infinite looping)
-            int maxAttempts = 100000;
-            int currentAttempt = 0;
+            // Start the stopwatch
+            stopwatch.Start();
 
-            while (currentAttempt < maxAttempts && !isElementFound)
+            try
             {
-                try
+                while (!isElementFound)
                 {
-                    // Attempt to find the element
-                    IWebElement element = driver.FindElement(By.XPath("//*[@id=\"tabs-0-panel-search_video\"]/div/div[2]"));
+                    try
+                    {
+                        // Attempt to find the element
+                        IWebElement element = driver.FindElement(By.XPath("//*[@id=\"tabs-0-panel-search_video\"]/div/div[2]"));
 
-                    // If the element is found, set the flag to true and break out of the loop
-                    isElementFound = true;
+                        // If the element is found, set the flag to true and break out of the loop
+                        isElementFound = true;
 
-                    // Now you can interact with the element
-                    Console.WriteLine("Element found: " + element.Text);
+                        // Now you can interact with the element
+                        Console.WriteLine("Element found: " + element.Text);
 
-                    
 
-                }
-                catch (NoSuchElementException)
-                {
-                    // If the element is not found, increment the attempt counter and wait before the next attempt
-                    currentAttempt++;
-                    System.Threading.Thread.Sleep(1000);
-                    // For example, scroll down using JavaScript to load more content
-                    
-                        IJavaScriptExecutor jsExecutor = (IJavaScriptExecutor)driver;
-                        jsExecutor.ExecuteScript("window.scrollTo(0, document.body.scrollHeight);");
 
+                    }
+                    catch (NoSuchElementException)
+                    {
+
+                    }
 
                     // Find all elements with a class containing "css-1soki6-DivItemContainerForSearch"
                     ReadOnlyCollection<IWebElement> elements = driver.FindElements(By.CssSelector("[class*='css-1soki6-DivItemContainerForSearch']"));
 
-                    // Count and output the number of matching elements
-                    Console.WriteLine($"Number of elements with the specified class: {elements.Count}");
+                    // Update current count
+                    currentCount = elements.Count;
 
-                    // Wait for 1 second before the next attempt
+                    Console.WriteLine($"Found {currentCount} Videos!");
+
+                    // Check if the count has stopped increasing
+                    if (currentCount == initialCount)
+                    {
+                        if (stopwatch.Elapsed > TimeSpan.FromMilliseconds(30000))
+                        {
+                            // Output count and break out of the loop if one minute has passed
+                            Console.WriteLine($"Total Videos: {currentCount}");
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // Update initial count and reset the stopwatch if the count is increasing
+                        initialCount = currentCount;
+                        stopwatch.Restart();
+                    }
+
+                    // Scroll to the bottom of the page
+                    IJavaScriptExecutor jsExecutor = (IJavaScriptExecutor)driver;
+                    jsExecutor.ExecuteScript("window.scrollTo(0, document.body.scrollHeight);");
+
+                    // Sleep for a short duration (adjust as needed)
+                    Thread.Sleep(1000); // Sleep for 1 second before checking again
                 }
-                catch(Exception e)
-                {
-                    Console.WriteLine(e.ToString());    
-                }
+            }
+            finally
+            {
+                // Stop the stopwatch
+                stopwatch.Stop();
+                
             }
 
             TikTokScraper tikTokScraper = new TikTokScraper(driver);
 
+            // Close the browser 
+            //  driver.Quit(); get disposed error neads to change from driver to htmldoc in TikTokScraper(driver)
+
             List<Videos> videosList;
 
             // Create a progress bar for overall progress
+            /*
             var overallProgressOptions = new ProgressBarOptions
             {
                 ProgressCharacter = '#',
@@ -222,6 +202,9 @@ internal class Program
                 // Retrieve videos with overall progress reporting
                 videosList = await tikTokScraper.GetVideosAsync(overallProgress);
             }
+            */
+            videosList = await tikTokScraper.GetVideosAsync();
+
 
             Console.WriteLine($"Recent Videos:");
 
